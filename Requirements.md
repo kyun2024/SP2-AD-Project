@@ -13,4 +13,9 @@ UI 설계의 내용
 ### Screen
  * 화면 해상도는 고정(fixed)으로 한다. 크기는 height * width로 한다.
  * 화면은 세로 방향으로 표시된다
-
+### Scene
+ * Scene 클래스와 SceneManager 클래스를 설계
+ * Scene은 인터페이스
+ * SceneManager는 Scene들을 관리
+ * Scene을 상속받아 자신만의 Scene을 구성할 수 있음
+ * SceneManager는 changeScene 매서드를 통해 Scene을 변경하고 초기화함.
