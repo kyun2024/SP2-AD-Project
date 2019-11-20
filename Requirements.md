@@ -19,3 +19,8 @@ UI 설계의 내용
  * SceneManager는 Scene들을 관리
  * Scene을 상속받아 자신만의 Scene을 구성할 수 있음
  * SceneManager는 changeScene 매서드를 통해 Scene을 변경하고 초기화함.
+### Database
+ * 랭킹을 저장할 데이터베이스 구현(포함)
+ * 랭킹은 최대 10개까지 저장
+ * 점수만 저장, 내림차순 형태로 정렬되어 있음
+ 
