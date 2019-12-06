@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QVBoxLayout
 
 import sys
 
@@ -7,7 +8,7 @@ class Ui_Main(QtWidgets.QWidget):
         Main.setObjectName("Main")
         Main.resize(800, 480)
 
-        self.QtStack = QtWidgets.QStackedLayout()
+        self.QtStack = QtWidgets.QStackedLayout(self)
 
         self.stack1 = QtWidgets.QWidget()
         self.stack2 = QtWidgets.QWidget()
@@ -20,6 +21,10 @@ class Ui_Main(QtWidgets.QWidget):
         self.QtStack.addWidget(self.stack1)
         self.QtStack.addWidget(self.stack2)
         self.QtStack.addWidget(self.stack3)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.QtStack)
+        self.setLayout(layout)
 
     def Window1UI(self):
         self.stack1.resize(800, 480)

@@ -1,7 +1,6 @@
 import sys
 from PyQt5.Qt import QWidget, QApplication, QPushButton, QGridLayout
 
-
 class Sensor(QWidget):
     def __init__(self,slot):
         super().__init__();
