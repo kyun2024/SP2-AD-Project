@@ -77,14 +77,15 @@ class PlayScene(QWidget):
         self.score = 0
         self.maxScore = db.getScores()[0]
         self.timer.timeout.connect(self.changeTime)
-        self.threadclass = ThreadClass(self.score)
+        self.threadclass = ThreadClass()
+        self.score = self.threadclass.point
 
         self.initUI()
 
     def changeTime(self):
         self.remainTime -= 1
         if (self.remainTime < 0):
-            db.addScore(self.score)
+            db.addScore(self.threadclass.point)
             print(db.getScores())
             self.timer.stop()
             self.stw.setCurrentIndex(2)
@@ -99,10 +100,10 @@ class PlayScene(QWidget):
 
     def addScore(self,score):
         self.score += score
-        if(self.maxScore<self.score):
-            self.maxScore = self.score
+        if(self.maxScore<self.threadclass.point):
+            self.maxScore = self.threadclass.point
             self.maxScoreLcd.display(self.maxScore)
-        self.scoreLcd.display(self.score)
+        self.scoreLcd.display(self.threadclass.point)
 
     def initUI(self):
         self.scoreLcd = QLCDNumber()
@@ -127,12 +128,12 @@ class PlayScene(QWidget):
 
     def initGame(self):
         self.game_start = False
-        self.score = 0
+        self.threadclass.point = 0
         self.maxScore = db.getScores()[0]
         self.remainTime = 300
 
         self.maxScoreLcd.display(self.maxScore)
-        self.scoreLcd.display(self.score)
+        self.scoreLcd.display(self.threadclass.point)
         self.lcd.display(self.remainTime)
         self.timer.stop()
         self.timer.start()
@@ -179,9 +180,9 @@ class RankingScene(QWidget):
 
 
 class ThreadClass(QThread):
-    def __init__(self, score, parent=None):
+    def __init__(self, parent=None):
         super(ThreadClass, self).__init__(parent)
-        self.point = score
+        self.point = 0
 
     def run(self):
         while 1:
@@ -189,7 +190,7 @@ class ThreadClass(QThread):
             msg = data.decode('utf-8')
             if msg == 'goal':
                 self.point += 10
-                print(msg)
+                print(msg, self.point)
 
 
 
