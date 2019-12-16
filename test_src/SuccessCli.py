@@ -1,0 +1,210 @@
+from socket import *
+import sys
+from PyQt5.QtWidgets import (
+    QStackedWidget, QGridLayout, QWidget, QLabel,
+    QPushButton, QApplication, QVBoxLayout,
+    QLCDNumber
+)
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject
+from PyQt5.QtCore import QThread
+
+from SimpleDB import SimpleDB
+
+
+HOST = '10.42.0.42'
+PORT = 1217
+ADDR = (HOST, PORT)
+
+s = socket(AF_INET, SOCK_STREAM)
+s.connect(ADDR)
+
+db = SimpleDB()
+
+class Game(QWidget):
+    def __init__(self):
+        super()
+        self.initUI()
+
+    def initUI(self):
+        pass
+
+class InitScene(QWidget):
+    def __init__(self,st):
+        super().__init__()
+        self.initUI()
+        self.stw = st
+
+    def changeScene(self):
+        #self.stw = QStackedWidget()
+        self.stw.setCurrentIndex(1)
+        self.stw.currentWidget().initGame()
+
+    def initUI(self):
+        self.setGeometry(0,0,360,640)
+
+        label = QLabel('BASKETBALL GAME')
+        label.setStyleSheet('font-size: 42px')
+        label.setAlignment(Qt.AlignCenter)
+        btn = QPushButton('PLAY')
+        btn.setStyleSheet('font-size:36px')
+
+
+
+        btn.pressed.connect(self.changeScene)
+
+        layout = QVBoxLayout()
+        layout.addStretch()
+        layout.addWidget(label)
+        layout.addStretch()
+        layout.addStretch()
+        layout.addWidget(btn)
+        layout.addStretch()
+
+        self.setLayout(layout)
+        #self.show()
+
+
+
+class PlayScene(QWidget):
+    def __init__(self,st):
+        super().__init__()
+        self.stw = st
+        self.timer = QTimer()
+        self.timer.setInterval(100)
+        self.remainTime = 30
+        self.score = 0
+        self.maxScore = db.getScores()[0]
+        self.timer.timeout.connect(self.changeTime)
+        self.threadclass = ThreadClass(lambda: self.addScore(10))
+        self.score = self.threadclass.point
+
+        self.initUI()
+
+    def changeTime(self):
+        self.remainTime -= 1
+        if (self.remainTime < 0):
+            db.addScore(self.threadclass.point)
+            print(db.getScores())
+            self.timer.stop()
+            self.stw.setCurrentIndex(2)
+            self.stw.currentWidget() .renewScores()
+        if self.remainTime>50:
+            self.lcd.setStyleSheet('color:black;background-color:white')
+        else:
+            self.lcd.setStyleSheet('color:red;background-color:white')
+
+        self.lcd.display(self.remainTime)
+
+
+    def addScore(self,score):
+        self.score += score
+        if(self.maxScore<self.threadclass.point):
+            self.maxScore = self.threadclass.point
+            self.maxScoreLcd.display(self.maxScore)
+        print(self.score)
+        self.scoreLcd.display(self.score)
+
+    def initUI(self):
+        self.scoreLcd = QLCDNumber()
+        self.scoreLcd.setStyleSheet('background-color: white')
+        self.lcd = QLCDNumber()
+        self.lcd.setStyleSheet('background-color: white')
+        self.maxScoreLcd = QLCDNumber()
+        self.maxScoreLcd.setStyleSheet('background-color: white')
+
+        self.lcd.display(self.remainTime)
+        layout = QGridLayout()
+        layout.addWidget(QLabel("MAX SCORE"), 0, 0)
+        layout.addWidget(QLabel("SCORE"), 0, 1)
+        layout.addWidget(QLabel("TIME"), 0, 2)
+
+        layout.addWidget(self.maxScoreLcd,1,0)
+        layout.addWidget(self.scoreLcd,1,1)
+        layout.addWidget(self.lcd,1,2)
+        self.setLayout(layout)
+        #self.show()
+        pass
+
+    def initGame(self):
+        self.game_start = False
+        self.threadclass.point = 0
+        self.maxScore = db.getScores()[0]
+        self.remainTime = 300
+
+        self.maxScoreLcd.display(self.maxScore)
+        self.scoreLcd.display(self.threadclass.point)
+        self.lcd.display(self.remainTime)
+        self.timer.stop()
+        self.timer.start()
+        self.threadclass.start()
+
+
+    def keyPressEvent(self, e):
+        if (e.key() == Qt.Key_A):
+            self.addScore(10)
+
+
+
+class RankingScene(QWidget):
+    def __init__(self,st):
+        super().__init__()
+        self.stw = st;
+        self.scoreLabels = [QLabel() for _ in range(10)]
+        self.initUI();
+
+    def initUI(self):
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0,0,0,0)
+        label = QLabel('Ranking')
+        label.setStyleSheet('font-size: 42px; background-color: hsv(0,0,255)')
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+        scores = db.getScores()
+        for i in range(len(scores)):
+            self.scoreLabels[i] = QLabel("{} : {}".format(i+1,scores[i]))
+            self.scoreLabels[i].setStyleSheet('font-size: 42px; background-color: hsv(%d,150,255)'%(i*360//len(scores)))
+            self.scoreLabels[i].setAlignment(Qt.AlignCenter)
+            layout.addWidget(self.scoreLabels[i])
+        self.setLayout(layout)
+
+    def renewScores(self):
+        scores = db.getScores()
+        for i in range(len(self.scoreLabels)):
+            self.scoreLabels[i].setText("{} : {}".format(i+1,scores[i]))
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_E:
+            self.stw.setCurrentIndex(0)
+
+
+class ThreadClass(QThread):
+    def __init__(self, callback, parent=None):
+        super(ThreadClass, self).__init__(parent)
+        self.point = 0
+        self.callback = callback
+
+    def run(self):
+        while 1:
+            data = s.recv(1024)
+            msg = data.decode('utf-8')
+            if msg == 'goal':
+                self.callback()
+                #self.point += 10
+                #print(msg, self.point)
+
+
+
+
+if __name__ == "__main__":
+    q = QApplication(sys.argv)
+    st = QStackedWidget()
+    st.addWidget(InitScene(st))
+    st.addWidget(PlayScene(st))
+    st.addWidget(RankingScene(st))
+    st.setGeometry(0, 0, 540, 960)
+    st.show()
+    sys.exit(q.exec_())
+d
