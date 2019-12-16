@@ -14,7 +14,7 @@ from SimpleDB import SimpleDB
 
 
 HOST = '10.42.0.42'
-PORT = 1216
+PORT = 1217
 ADDR = (HOST, PORT)
 
 s = socket(AF_INET, SOCK_STREAM)
@@ -77,7 +77,7 @@ class PlayScene(QWidget):
         self.score = 0
         self.maxScore = db.getScores()[0]
         self.timer.timeout.connect(self.changeTime)
-        self.threadclass = ThreadClass()
+        self.threadclass = ThreadClass(self.score)
 
         self.initUI()
 
@@ -143,13 +143,6 @@ class PlayScene(QWidget):
         if (e.key() == Qt.Key_A):
             self.addScore(10)
 
-    def socket(self):
-        def test():
-            while 1:
-                data = s.recv(1024)
-                if data == 'goal':
-                    print('goal!')
-                    self.addScore(10)
 
 
 class RankingScene(QWidget):
@@ -186,14 +179,19 @@ class RankingScene(QWidget):
 
 
 class ThreadClass(QThread):
-    def __init__(self, parent=None):
+    def __init__(self, score, parent=None):
         super(ThreadClass, self).__init__(parent)
+        self.point = score
 
     def run(self):
         while 1:
             data = s.recv(1024)
-            if data == 'goal':
-                print('goal!')
+            msg = data.decode('utf-8')
+            if msg == 'goal':
+                self.point += 10
+                print(msg)
+
+
 
 
 if __name__ == "__main__":
